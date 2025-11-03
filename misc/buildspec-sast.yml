@@ -1,0 +1,45 @@
+# AWS CodeBuild buildspec for SAST scanning
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo "Starting SAST scan..."
+      - npm install -g semgrep
+      - echo "Installing dependencies..."
+      - npm ci
+
+  build:
+    commands:
+      - echo "Running Semgrep SAST analysis..."
+      - semgrep --config=p/security-audit --config=p/typescript --json -o semgrep-results.json . || true
+      - echo "Running ESLint security rules..."
+      - npm run lint 2>&1 | tee eslint-results.txt || true
+      - |
+        echo "Processing SAST results..."
+        if [ -f semgrep-results.json ]; then
+          jq '.results | length' semgrep-results.json || echo "0"
+        fi
+
+  post_build:
+    commands:
+      - echo "SAST scan completed"
+      - ls -la *.json *.txt 2>/dev/null || true
+
+artifacts:
+  files:
+    - semgrep-results.json
+    - eslint-results.txt
+    - '**/*'
+  name: SastArtifacts
+
+cache:
+  paths:
+    - '/root/.npm/**/*'
+    - 'node_modules/**/*'
+
+reports:
+  sast-report:
+    files:
+      - semgrep-results.json
+    file-format: 'JSON'

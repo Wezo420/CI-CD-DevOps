@@ -1,0 +1,47 @@
+# AWS CodeBuild buildspec for container image scanning
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo "Setting up container scanning..."
+      - export IMAGE_TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION:0:7}
+      - export IMAGE_URI=$ECR_REPOSITORY_URI:$IMAGE_TAG
+
+  build:
+    commands:
+      - echo "Scanning container image with ECR image scan..."
+      - |
+        aws ecr start-image-scan \
+          --repository-name $(echo $ECR_REPOSITORY_URI | cut -d'/' -f2) \
+          --image-id imageTag=$IMAGE_TAG
+      - echo "Waiting for scan to complete..."
+      - sleep 30
+      - echo "Retrieving scan results..."
+      - |
+        aws ecr describe-image-scan-findings \
+          --repository-name $(echo $ECR_REPOSITORY_URI | cut -d'/' -f2) \
+          --image-id imageTag=$IMAGE_TAG > container-scan-results.json || true
+      - echo "Running Trivy scan locally..."
+      - |
+        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+          aquasec/trivy image --format json --output trivy-results.json \
+          $IMAGE_URI || true
+
+  post_build:
+    commands:
+      - echo "Container scan completed"
+      - if [ -f trivy-results.json ]; then jq '.Results | length' trivy-results.json || echo "Scan complete"; fi
+
+artifacts:
+  files:
+    - container-scan-results.json
+    - trivy-results.json
+    - imagedefinitions.json
+  name: ContainerScanArtifacts
+
+reports:
+  container-scan-report:
+    files:
+      - container-scan-results.json
+    file-format: 'JSON'

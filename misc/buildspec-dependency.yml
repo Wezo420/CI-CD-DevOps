@@ -1,0 +1,49 @@
+# AWS CodeBuild buildspec for dependency vulnerability scanning
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo "Starting dependency scan..."
+      - npm install -g snyk
+      - echo "Installing dependencies..."
+      - npm ci
+
+  build:
+    commands:
+      - echo "Running npm audit..."
+      - npm audit --json > npm-audit-results.json || true
+      - echo "Running Snyk vulnerability scan..."
+      - |
+        if [ ! -z "$SNYK_TOKEN" ]; then
+          snyk auth "$SNYK_TOKEN" || true
+          snyk test --json > snyk-results.json --severity-threshold=high || true
+          snyk test --json-file-output=snyk-sarif.json --sarif || true
+        else
+          echo "Warning: SNYK_TOKEN not configured"
+        fi
+
+  post_build:
+    commands:
+      - echo "Dependency scan completed"
+      - |
+        echo "Vulnerabilities found:"
+        jq '.vulnerabilities | length' npm-audit-results.json 2>/dev/null || echo "Check results above"
+
+artifacts:
+  files:
+    - npm-audit-results.json
+    - snyk-results.json
+    - '**/*'
+  name: DependencyArtifacts
+
+cache:
+  paths:
+    - '/root/.npm/**/*'
+    - 'node_modules/**/*'
+
+reports:
+  dependency-report:
+    files:
+      - npm-audit-results.json
+    file-format: 'JSON'

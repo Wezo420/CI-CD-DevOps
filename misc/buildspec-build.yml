@@ -1,0 +1,41 @@
+# AWS CodeBuild buildspec for building and containerizing the application
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo "Logging into Amazon ECR..."
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - export IMAGE_TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION:0:7}
+      - export IMAGE_URI=$ECR_REPOSITORY_URI:$IMAGE_TAG
+
+  build:
+    commands:
+      - echo "Building Docker image on $(date)"
+      - docker build -t $IMAGE_URI .
+      - docker tag $IMAGE_URI $ECR_REPOSITORY_URI:latest
+      - echo "Running npm build..."
+      - npm ci
+      - npm run build || true
+
+  post_build:
+    commands:
+      - echo "Pushing Docker image to ECR on $(date)"
+      - docker push $IMAGE_URI
+      - docker push $ECR_REPOSITORY_URI:latest
+      - echo "Image pushed successfully"
+      - printf '[{"name":"medical-records-app","imageUri":"%s"}]' $IMAGE_URI > imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json
+    - build/**/*
+    - .next/**/*
+    - public/**/*
+  name: BuildArtifacts
+
+cache:
+  paths:
+    - '/root/.npm/**/*'
+    - 'node_modules/**/*'
+    - '.next/**/*'

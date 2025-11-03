@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    container_name: medical_records_db
+    environment:
+      POSTGRES_USER: meduser
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-medpass}
+      POSTGRES_DB: medical_records
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U meduser"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: medical_records_api
+    environment:
+      NEON_DATABASE_URL: postgresql+asyncpg://meduser:${DB_PASSWORD:-medpass}@db:5432/medical_records
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+
+volumes:
+  postgres_data:

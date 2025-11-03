@@ -1,0 +1,62 @@
+version: 0.2
+
+# AWS CodeBuild specification for CI/CD pipeline
+# Integrate security scanning into AWS CodePipeline
+
+env:
+  variables:
+    NODE_ENV: "production"
+    AWS_DEFAULT_REGION: "us-east-1"
+  parameter-store:
+    SNYK_TOKEN: /security-dashboard/snyk-token
+    SONAR_TOKEN: /security-dashboard/sonar-token
+    SECURITY_API_KEY: /security-dashboard/api-key
+
+phases:
+  pre_build:
+    commands:
+      - echo "Installing dependencies..."
+      - npm install
+      - echo "Running security scans..."
+      - npm install -g snyk @snyk/cli
+      - snyk auth $SNYK_TOKEN || true
+      - echo "Starting SAST scan..."
+      - npm install -g semgrep
+      - semgrep --config=p/security-audit --json > semgrep-results.json || true
+
+  build:
+    commands:
+      - echo "Building application..."
+      - npm run build
+      - echo "Running dependency check..."
+      - npm audit --json > npm-audit.json || true
+      - snyk test --json > snyk-results.json || true
+      - echo "Running code quality scan..."
+      - npx sonarqube-scanner -Dsonar.projectKey=$SONAR_PROJECT_KEY -Dsonar.sources=. -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.login=$SONAR_TOKEN || true
+
+  post_build:
+    commands:
+      - echo "Uploading scan results..."
+      - |
+        aws s3 cp semgrep-results.json s3://$SECURITY_BUCKET/scans/$(date +%s)-semgrep.json
+        aws s3 cp npm-audit.json s3://$SECURITY_BUCKET/scans/$(date +%s)-npm-audit.json
+        aws s3 cp snyk-results.json s3://$SECURITY_BUCKET/scans/$(date +%s)-snyk.json
+      - echo "Creating Docker image..."
+      - docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG .
+      - echo "Scanning Docker image for vulnerabilities..."
+      - trivy image --format json --output image-scan.json $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
+      - aws s3 cp image-scan.json s3://$SECURITY_BUCKET/scans/$(date +%s)-image-scan.json
+      - echo "Pushing image to ECR..."
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
+      - echo "Build completed successfully"
+
+artifacts:
+  files:
+    - '**/*'
+  name: BuildArtifact
+
+cache:
+  paths:
+    - '/root/.npm/**/*'
+    - '/root/.snyk/**/*'
