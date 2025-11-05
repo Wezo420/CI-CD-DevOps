@@ -11,6 +11,7 @@ on:
 jobs:
   security_scans:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
@@ -21,48 +22,60 @@ jobs:
         with:
           python-version: '3.11'
 
-      # ---- Install GitLeaks binary ----
-      - name: Install GitLeaks
+      # ---- Install CLI Scanners ----
+      - name: Install Security Tools (GitLeaks, Trivy, Checkov)
         run: |
+          sudo apt-get update
+          sudo apt-get install -y wget curl apt-transport-https gnupg lsb-release
+          
+          # Install GitLeaks
           curl -sSL https://github.com/zricethezav/gitleaks/releases/latest/download/gitleaks-linux-amd64.tar.gz -o /tmp/gitleaks.tar.gz
           tar -xzf /tmp/gitleaks.tar.gz -C /tmp
           sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
           gitleaks version
 
-      # ---- Run GitLeaks scan ----
-      - name: Run GitLeaks scan
-        run: |
-          mkdir -p reports
-          gitleaks detect --source . --report-format json --report-path reports/gitleaks-report.json --redact -v
-
-      # ---- Install Trivy binary ----
-      - name: Install Trivy
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+          # Install Trivy
           wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
-          echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee /etc/apt/sources.list.d/trivy.list
           sudo apt-get update
           sudo apt-get install -y trivy
           trivy --version
 
+          # Install Checkov
+          pip install checkov
+          checkov --version
+
+      # ---- Run GitLeaks scan ----
+      - name: Run GitLeaks scan (Secrets)
+        run: |
+          mkdir -p reports
+          gitleaks detect --source . --report-format json --report-path reports/gitleaks-report.json --redact -v || true
+
       # ---- Run Trivy scan ----
-      - name: Run Trivy scan
+      - name: Run Trivy scan (Vulnerabilities)
         run: |
           mkdir -p reports
           trivy fs . --format json --output reports/trivy-report.json || true
 
+      # ---- Run Checkov scan ----
+      - name: Run Checkov scan (IaC misconfigurations)
+        run: |
+          mkdir -p reports
+          checkov -d . -o json > reports/checkov-report.json || true
+
+      # ---- Upload all scan reports ----
       - name: Upload scan reports
         uses: actions/upload-artifact@v4
         with:
           name: scan-reports
           path: reports/*.json
 
+      # ---- Fail PR if secrets found ----
       - name: Fail PR if secrets found
         run: |
           if [ -s reports/gitleaks-report.json ]; then
-            echo 'Secrets found! Failing the workflow.'
+            echo '❌ Secrets found! Failing the workflow.'
             exit 1
           else
-            echo 'No secrets found.'
+            echo '✅ No secrets found.'
           fi
