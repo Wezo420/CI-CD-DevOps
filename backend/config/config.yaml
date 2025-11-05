@@ -1,0 +1,15 @@
+notifications:
+  slack:
+    enabled: true
+    fail_on: ["CRITICAL", "HIGH"]
+    webhook_env_var: "SLACK_WEBHOOK_URL"
+  email:
+    enabled: false
+    fail_on: ["CRITICAL"]
+    smtp:
+      host: "smtp.gmail.com"
+      port: 587
+      user_env_var: "SMTP_USER"
+      pass_env_var: "SMTP_PASS"
+    recipients:
+      - "team@example.com"
