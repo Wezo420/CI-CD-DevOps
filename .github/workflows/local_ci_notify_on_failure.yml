@@ -27,6 +27,25 @@ jobs:
           source .venv/bin/activate
           pip install -r requirements.txt
 
+      # ---- Install GitLeaks binary ----
+      - name: Install GitLeaks
+        run: |
+          curl -sSL https://github.com/zricethezav/gitleaks/releases/latest/download/gitleaks-linux-amd64.tar.gz -o /tmp/gitleaks.tar.gz
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp
+          sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+
+      # ---- Install Trivy binary ----
+      - name: Install Trivy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install -y trivy
+          trivy --version
+
       - name: Run tests
         run: |
           cd backend
@@ -43,14 +62,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: scan-reports
-          path: backend/reports/*.json
+          path: reports/*.json
 
       - name: Notify on Failure
         if: failure()
         run: |
           cd backend
           source .venv/bin/activate
-          python notify.py --report reports/mock_report.json --config config/config.yaml
+          python scripts/notify.py --report reports/mock_report.json --config config/config.yaml
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
