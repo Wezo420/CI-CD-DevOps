@@ -1,0 +1,7 @@
+{
+  "secrets": [
+    {"scanner":"gitleaks","rule_id":"GIT001","file_path":"backend/auth/security.py","severity":"CRITICAL","message":"Hardcoded secret key found"}
+  ],
+  "iac": [],
+  "container": []
+}
