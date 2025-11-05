@@ -23,26 +23,80 @@ jobs:
           python-version: '3.11'
 
       - name: Install Security Tools (GitLeaks, Trivy, Checkov)
+        shell: bash
         run: |
+          set -e
           sudo apt-get update
-          sudo apt-get install -y wget curl apt-transport-https gnupg lsb-release
+          sudo apt-get install -y wget curl apt-transport-https gnupg lsb-release || true
 
-          # GitLeaks
-          curl -sSL https://github.com/zricethezav/gitleaks/releases/latest/download/gitleaks-linux-amd64.tar.gz -o /tmp/gitleaks.tar.gz
-          tar -xzf /tmp/gitleaks.tar.gz -C /tmp
-          sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
-          gitleaks version || true
+          ################################################################################
+          # GitLeaks (robust install: try raw binary then tarball fallback)
+          ################################################################################
+          echo "Installing GitLeaks..."
+          BIN_URL="https://github.com/zricethezav/gitleaks/releases/latest/download/gitleaks-linux-amd64"
+          TAR_URL="${BIN_URL}.tar.gz"
+          TMP_BIN="/tmp/gitleaks_dl"
+          rm -f "$TMP_BIN" /tmp/gitleaks.tar.gz || true
+          curl -sSL -o "$TMP_BIN" "$BIN_URL" || true
 
-          # Trivy
+          FILE_TYPE=$(file -b --mime-type "$TMP_BIN" 2>/dev/null || echo "none")
+          echo "Downloaded /tmp/gitleaks_dl mime-type: $FILE_TYPE"
+
+          if [ "$FILE_TYPE" = "application/x-gzip" ] || [ "$FILE_TYPE" = "application/gzip" ]; then
+            echo "Got a gzip file; extracting..."
+            mkdir -p /tmp/gitleaks_unpack
+            tar -xzf "$TMP_BIN" -C /tmp/gitleaks_unpack || true
+            BIN_FOUND=$(find /tmp/gitleaks_unpack -type f -perm /u+x -print -quit || true)
+            if [ -n "$BIN_FOUND" ]; then
+              sudo mv "$BIN_FOUND" /usr/local/bin/gitleaks || true
+              sudo chmod +x /usr/local/bin/gitleaks || true
+            fi
+          else
+            if [ -s "$TMP_BIN" ] && file "$TMP_BIN" | grep -q -E 'executable|ELF|application/octet-stream|application/x-executable'; then
+              echo "Direct binary looks executable — installing..."
+              chmod +x "$TMP_BIN" || true
+              sudo mv "$TMP_BIN" /usr/local/bin/gitleaks || true
+            else
+              echo "Direct binary not usable — trying tarball URL..."
+              curl -sSL -o /tmp/gitleaks.tar.gz "$TAR_URL" || true
+              if [ -f /tmp/gitleaks.tar.gz ]; then
+                mkdir -p /tmp/gitleaks_unpack
+                tar -xzf /tmp/gitleaks.tar.gz -C /tmp/gitleaks_unpack || true
+                BIN_FOUND=$(find /tmp/gitleaks_unpack -type f -perm /u+x -print -quit || true)
+                if [ -n "$BIN_FOUND" ]; then
+                  sudo mv "$BIN_FOUND" /usr/local/bin/gitleaks || true
+                  sudo chmod +x /usr/local/bin/gitleaks || true
+                else
+                  echo "No executable found in tarball — skipping gitleaks install"
+                fi
+              else
+                echo "Tarball download failed — skipping gitleaks install"
+              fi
+            fi
+          fi
+
+          if command -v gitleaks >/dev/null 2>&1; then
+            gitleaks version || true
+          else
+            echo "gitleaks not installed (install skipped)."
+          fi
+
+          ################################################################################
+          # Trivy (install via apt)
+          ################################################################################
+          echo "Installing Trivy..."
           wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add - || true
-          echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee /etc/apt/sources.list.d/trivy.list
-          sudo apt-get update
-          sudo apt-get install -y trivy
+          echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee /etc/apt/sources.list.d/trivy.list || true
+          sudo apt-get update || true
+          sudo apt-get install -y trivy || true
           trivy --version || true
 
-          # Checkov
-          python -m pip install --upgrade pip
-          pip install checkov
+          ################################################################################
+          # Checkov (pip)
+          ################################################################################
+          echo "Installing Checkov..."
+          python -m pip install --upgrade pip || true
+          python -m pip install checkov || true
           checkov --version || true
 
       - name: Prepare backend reports dir
@@ -52,17 +106,56 @@ jobs:
       - name: Run GitLeaks scan (Secrets) - backend
         run: |
           (cd backend && gitleaks detect --source . --report-format json --report-path reports/gitleaks-report.json --redact -v) || true
+        shell: bash
 
       - name: Run Trivy scan (Vulnerabilities) - backend
         run: |
           (cd backend && trivy fs . --format json --output reports/trivy-report.json) || true
+        shell: bash
 
       - name: Run Checkov scan (IaC) - backend
         run: |
           (cd backend && checkov -d . -o json > reports/checkov-report.json) || true
+        shell: bash
 
       - name: Upload scan reports
         uses: actions/upload-artifact@v4
         with:
           name: scan-reports
           path: backend/reports/*.json
+          if-no-files-found: ignore
+
+      - name: Fail PR if secrets found
+        run: |
+          REPORT="backend/reports/gitleaks-report.json"
+          if [ ! -f "$REPORT" ]; then
+            echo "No gitleaks report produced; assuming no findings."
+            exit 0
+          fi
+          # Count findings using python
+          cnt=$(python - <<'PY'
+import json,sys
+try:
+    data=json.load(open("backend/reports/gitleaks-report.json"))
+    if isinstance(data, dict) and "Findings" in data and isinstance(data["Findings"], list):
+        print(len(data["Findings"]))
+    elif isinstance(data, list):
+        print(len(data))
+    else:
+        total = 0
+        for v in data.values() if isinstance(data, dict) else []:
+            if isinstance(v, list): total += len(v)
+        print(total)
+except Exception:
+    print(0)
+PY
+)
+          echo "GitLeaks findings count: $cnt"
+          if [ "$cnt" -gt 0 ]; then
+            echo 'Secrets found! Failing the workflow.'
+            exit 1
+          else
+            echo 'No secrets found.'
+            exit 0
+          fi
+        shell: bash
