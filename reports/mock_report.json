@@ -1,43 +1,36 @@
 {
   "secrets": [
     {
-      "scanner": "gitleaks",
-      "rule_id": "GL001",
-      "file_path": "api/auth.py",
-      "severity": "HIGH",
-      "message": "Hardcoded AWS secret key found in file"
+      "scanner": "GitLeaks",
+      "rule_id": "GIT001",
+      "file_path": "backend/auth/security.py",
+      "severity": "CRITICAL",
+      "message": "Hardcoded secret key found"
     },
     {
-      "scanner": "gitleaks",
-      "rule_id": "GL002",
-      "file_path": "scripts/db_init.py",
-      "severity": "LOW",
-      "message": "Possible credential pattern - verify"
+      "scanner": "GitLeaks",
+      "rule_id": "GIT002",
+      "file_path": "backend/api/patients.py",
+      "severity": "HIGH",
+      "message": "Possible API token exposed"
     }
   ],
   "iac": [
     {
-      "scanner": "checkov",
+      "scanner": "Checkov",
       "rule_id": "CKV_AWS_20",
-      "file_path": "infra/s3.tf",
-      "severity": "CRITICAL",
-      "message": "S3 bucket allows public read access"
-    },
-    {
-      "scanner": "checkov",
-      "rule_id": "CKV_AWS_6",
-      "file_path": "infra/main.tf",
-      "severity": "MEDIUM",
-      "message": "IAM role with wildcard permissions"
+      "file_path": "iac/main.tf",
+      "severity": "HIGH",
+      "message": "S3 bucket allows public read"
     }
   ],
   "container": [
     {
-      "scanner": "trivy",
-      "rule_id": "TRV-001",
+      "scanner": "Trivy",
+      "rule_id": "TRV001",
       "file_path": "Dockerfile",
       "severity": "MEDIUM",
-      "message": "OpenSSL version in image is outdated"
+      "message": "Outdated package detected"
     }
   ]
 }
