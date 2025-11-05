@@ -1,6 +1,6 @@
 - name: Notify on Failure
   if: failure()
-  run: python scripts/notify.py
+  run: python notify.py
   env:
     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
     SMTP_USER: ${{ secrets.SMTP_USER }}
