@@ -3,7 +3,7 @@ import asyncio
 from httpx import AsyncClient
 from backend.database.config import engine, async_session, Base
 from backend.database.models import User
-from auth.security import hash_password, create_access_token
+from backend.auth.security import hash_password, create_access_token
 from main import app
 
 @pytest.fixture
