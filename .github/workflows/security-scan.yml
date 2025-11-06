@@ -126,30 +126,36 @@ jobs:
           if-no-files-found: ignore
 
       - name: Fail PR if secrets found
+        shell: bash
         run: |
           REPORT="backend/reports/gitleaks-report.json"
           if [ ! -f "$REPORT" ]; then
             echo "No gitleaks report produced; assuming no findings."
             exit 0
           fi
-          # Count findings using python
+
+          # Count findings using python (here-doc)
           cnt=$(python - <<'PY'
-import json,sys
+import json
 try:
-    data=json.load(open("backend/reports/gitleaks-report.json"))
+    data = json.load(open("backend/reports/gitleaks-report.json"))
+    # older gitleaks may produce a dict with "Findings"
     if isinstance(data, dict) and "Findings" in data and isinstance(data["Findings"], list):
         print(len(data["Findings"]))
     elif isinstance(data, list):
         print(len(data))
     else:
         total = 0
-        for v in data.values() if isinstance(data, dict) else []:
-            if isinstance(v, list): total += len(v)
+        if isinstance(data, dict):
+            for v in data.values():
+                if isinstance(v, list):
+                    total += len(v)
         print(total)
 except Exception:
     print(0)
 PY
 )
+
           echo "GitLeaks findings count: $cnt"
           if [ "$cnt" -gt 0 ]; then
             echo 'Secrets found! Failing the workflow.'
@@ -158,4 +164,3 @@ PY
             echo 'No secrets found.'
             exit 0
           fi
-        shell: bash
