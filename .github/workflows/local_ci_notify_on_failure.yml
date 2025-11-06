@@ -113,7 +113,9 @@ jobs:
         run: |
           set -e
           cd backend
-          echo "PYTHONPATH=$(pwd)" >> $GITHUB_ENV
+          # make backend resolvable in this shell/session
+          export PYTHONPATH="$(pwd)"
+          # activate venv and run tests
           . .venv/bin/activate
           pytest -q
         continue-on-error: false
