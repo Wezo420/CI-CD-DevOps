@@ -113,6 +113,7 @@ jobs:
         run: |
           set -e
           cd backend
+          echo "PYTHONPATH=$(pwd)" >> $GITHUB_ENV
           . .venv/bin/activate
           pytest -q
         continue-on-error: false
