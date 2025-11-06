@@ -1,3 +1,4 @@
+from backend.database.config import Base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import Column, String, Integer, DateTime, Boolean, Text, Enum, ForeignKey, JSON
