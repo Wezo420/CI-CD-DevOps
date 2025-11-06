@@ -21,7 +21,7 @@ async def get_current_user(credentials: HTTPAuthCredentials = Depends(security))
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     return payload
 
-@router.get("/me", response_model=MedicalRecordResponse)
+@router.get("/me", response_model=List[MedicalRecordResponse])
 async def get_my_records(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
