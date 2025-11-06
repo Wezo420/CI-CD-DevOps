@@ -4,6 +4,19 @@ from datetime import datetime
 import enum
 from database.config import Base
 import uuid
+import os
+import logging
+from sqlalchemy import create_engine
+
+logger = logging.getLogger(__name__)
+
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./test_sync.db")
+
+try:
+    engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, future=True)
+except Exception as exc:
+    logger.warning(f"Failed to connect to {DATABASE_URL}: {exc}. Falling back to SQLite.")
+    engine = create_engine("sqlite:///./test_sync.db", echo=False, future=True)
 
 class User(Base):
     __tablename__ = "users"
