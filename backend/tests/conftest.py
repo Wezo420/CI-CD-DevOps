@@ -1,7 +1,7 @@
 import pytest
 import asyncio
 from httpx import AsyncClient
-from database.database.config import engine, async_session, Base
+from backend.database.config import engine, async_session, Base
 from database.models import User
 from auth.security import hash_password, create_access_token
 from main import app
