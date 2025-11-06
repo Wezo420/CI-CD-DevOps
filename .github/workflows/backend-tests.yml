@@ -36,8 +36,11 @@ jobs:
 
       - name: Run pytest
         run: |
+          set -e
           cd backend
-          source .venv/bin/activate
+          # export backend path for imports
+          echo "PYTHONPATH=$(pwd)" >> $GITHUB_ENV
+          . .venv/bin/activate
           pytest -q --junitxml=reports/junit.xml || true
 
       - name: Upload pytest junit (artifact)
