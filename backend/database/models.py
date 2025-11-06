@@ -1,3 +1,5 @@
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import Column, String, Integer, DateTime, Boolean, Text, Enum, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -6,17 +8,24 @@ from database.config import Base
 import uuid
 import os
 import logging
-from sqlalchemy import create_engine
 
 logger = logging.getLogger(__name__)
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./test_sync.db")
 
-try:
-    engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, future=True)
-except Exception as exc:
-    logger.warning(f"Failed to connect to {DATABASE_URL}: {exc}. Falling back to SQLite.")
-    engine = create_engine("sqlite:///./test_sync.db", echo=False, future=True)
+def make_sync_engine(url: str):
+    try:
+        e = create_engine(url, echo=False, pool_pre_ping=True, future=True)
+        return e
+    except Exception as exc:
+        logger.warning(f"Failed to create engine for {url}: {exc}")
+        fallback = "sqlite:///./test_sync.db"
+        logger.info(f"Falling back to SQLite for CI/tests: {fallback}")
+        return create_engine(fallback, echo=False, future=True)
+
+engine = make_sync_engine(DATABASE_URL)
+SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+Base = declarative_base()
 
 class User(Base):
     __tablename__ = "users"
