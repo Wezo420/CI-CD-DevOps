@@ -2,7 +2,7 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.models import User
-from auth.security import hash_password
+from backend.auth.security import hash_password
 
 @pytest.mark.asyncio
 async def test_register_user(async_client: AsyncClient):
