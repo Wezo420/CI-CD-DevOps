@@ -3,12 +3,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from datetime import timedelta
 
-from database.config import get_db
-from database.models import User
-from schemas.user import UserCreate, UserResponse, TokenResponse, LoginRequest
-from auth.security import hash_password, verify_password, create_access_token
+from backend.database.config import get_db
+from backend.database.models import User
+from backend.schemas.user import UserCreate, UserResponse, TokenResponse, LoginRequest
+from backend.auth.security import hash_password, verify_password, create_access_token
 
-router = APIRouter()
+router = APIRouter(prefix="/auth", tags=["auth"])
+
+# rest of file unchanged
 
 @router.post("/register", response_model=UserResponse)
 async def register(user_create: UserCreate, db: AsyncSession = Depends(get_db)):
