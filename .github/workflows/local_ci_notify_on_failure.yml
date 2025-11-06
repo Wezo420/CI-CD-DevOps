@@ -117,7 +117,7 @@ jobs:
           # make backend resolvable in this shell/session
           export PYTHONPATH="$(pwd)"
           # activate venv and run tests
-          python -m pytest backend/tests -q 
+          python -m pytest tests -q 
 
       - name: Run security scans (backend runner script)
         run: |
