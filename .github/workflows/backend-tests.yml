@@ -30,6 +30,31 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Install CLI scanners (GitLeaks, Trivy, Checkov)
+        shell: bash
+        run: |
+          set -e
+          sudo apt-get update
+          sudo apt-get install -y wget curl apt-transport-https gnupg lsb-release || true
+
+          # Install GitLeaks (simple binary install)
+          curl -sSL https://github.com/zricethezav/gitleaks/releases/latest/download/gitleaks-linux-amd64 -o /tmp/gitleaks || true
+          chmod +x /tmp/gitleaks || true
+          sudo mv /tmp/gitleaks /usr/local/bin/gitleaks || true
+          if command -v gitleaks >/dev/null 2>&1; then gitleaks version || true; fi
+
+          # Trivy (optional)
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add - || true
+          echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee /etc/apt/sources.list.d/trivy.list || true
+          sudo apt-get update || true
+          sudo apt-get install -y trivy || true
+          trivy --version || true
+
+          # Checkov via pip (optional)
+          python -m pip install --upgrade pip || true
+          python -m pip install checkov || true
+          checkov --version || true
+
       - name: Prepare reports directory
         run: |
           mkdir -p backend/reports
@@ -41,7 +66,7 @@ jobs:
           # export backend path for imports
           echo "PYTHONPATH=$(pwd)" >> $GITHUB_ENV
           . .venv/bin/activate
-          pytest -q --junitxml=reports/junit.xml || true
+          python -m pytest -q --junitxml=reports/junit.xml
 
       - name: Upload pytest junit (artifact)
         uses: actions/upload-artifact@v4
