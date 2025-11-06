@@ -17,4 +17,3 @@ slack-sdk==3.26.0
 aiohttp==3.9.1
 requests==2.31.0
 aiosqlite==0.18.0
-pymysql==1.0.4
