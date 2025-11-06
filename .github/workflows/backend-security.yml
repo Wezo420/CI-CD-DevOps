@@ -48,9 +48,3 @@ jobs:
       - name: Run Semgrep
         run: |
           semgrep --config=p/security-audit --config=p/python backend/ --json -o semgrep-report.json || true
-      
-      - name: Upload Semgrep results
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: 'semgrep-report.json'
-        if: always()
