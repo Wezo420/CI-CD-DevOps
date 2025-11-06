@@ -5,7 +5,6 @@ from sqlalchemy import Column, String, Integer, DateTime, Boolean, Text, Enum, F
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
-from database.config import Base
 import uuid
 import os
 import logging
