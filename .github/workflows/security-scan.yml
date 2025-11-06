@@ -136,25 +136,25 @@ jobs:
 
           # Count findings using python (here-doc)
           cnt=$(python - <<'PY'
-import json
-try:
-    data = json.load(open("backend/reports/gitleaks-report.json"))
-    # older gitleaks may produce a dict with "Findings"
-    if isinstance(data, dict) and "Findings" in data and isinstance(data["Findings"], list):
-        print(len(data["Findings"]))
-    elif isinstance(data, list):
-        print(len(data))
-    else:
-        total = 0
-        if isinstance(data, dict):
-            for v in data.values():
-                if isinstance(v, list):
-                    total += len(v)
-        print(total)
-except Exception:
-    print(0)
-PY
-)
+          import json
+          try:
+              data = json.load(open("backend/reports/gitleaks-report.json"))
+              # older gitleaks may produce a dict with "Findings"
+              if isinstance(data, dict) and "Findings" in data and isinstance(data["Findings"], list):
+                  print(len(data["Findings"]))
+              elif isinstance(data, list):
+                  print(len(data))
+              else:
+                  total = 0
+                  if isinstance(data, dict):
+                      for v in data.values():
+                          if isinstance(v, list):
+                              total += len(v)
+                  print(total)
+          except Exception:
+              print(0)
+          PY
+          )
 
           echo "GitLeaks findings count: $cnt"
           if [ "$cnt" -gt 0 ]; then
