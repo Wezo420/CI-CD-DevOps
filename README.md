@@ -189,8 +189,7 @@ NEXT_PUBLIC_API_URL=http://<backend-host>:8000
 
 * GitHub Actions workflows are in `.github/workflows/`.
 
-  * `local_ci.yml` — runs tests, scanner scripts, and uploads reports.
-  * `local_ci_notify_on_failure.yml` — runs notifier only when a job fails (configurable).
+  * `local_ci_notify_on_failure.yml` — runs tests, scanner scripts, and uploads reports; runs notifier when a job fails (configurable).
 * Workflows already include steps to:
 
   * Setup Python
