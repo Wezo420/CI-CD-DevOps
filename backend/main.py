@@ -1,22 +1,13 @@
+# backend/main.py
 import os
+import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# Import database models FIRST to ensure they're registered
-from backend.database import models
-
-# Then import routers
+# Import routers
 from backend.api.patients import router as patients_router
 from backend.api.auth import router as auth_router
-
-# Import seed function conditionally
-try:
-    from backend.database.seed_data import seed_database
-    HAS_SEED_DATA = True
-except ImportError:
-    HAS_SEED_DATA = False
-    seed_database = None
 
 import uvicorn
 import logging
@@ -28,15 +19,13 @@ CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: seed DB only if available
-    if HAS_SEED_DATA and seed_database:
-        try:
-            if callable(seed_database):
-                await seed_database()
-            else:
-                seed_database()
-        except Exception as e:
-            logger.debug(f"seed_database() failed: {e}", exc_info=True)
+    # Startup: Try to seed database if available
+    try:
+        from backend.database.seed_data import seed_database
+        await seed_database()
+    except Exception as e:
+        logger.debug(f"Database seeding skipped or failed: {e}")
+    
     yield
     # Shutdown
 
