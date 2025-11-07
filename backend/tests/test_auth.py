@@ -12,7 +12,7 @@ async def test_register_user(async_client: AsyncClient):
         json={
             "username": "testuser",
             "email": "test@example.com",
-            "password": "securepass123",
+            "password": "pass123",
             "full_name": "Test User"
         }
     )
@@ -29,7 +29,7 @@ async def test_login_user(async_client: AsyncClient):
         json={
             "username": "testuser",
             "email": "test@example.com",
-            "password": "securepass123"
+            "password": "pass123"
         }
     )
     
@@ -37,7 +37,7 @@ async def test_login_user(async_client: AsyncClient):
         "/api/auth/login",
         json={
             "username": "testuser",
-            "password": "securepass123"
+            "password": "pass123"
         }
     )
     assert response.status_code == 200
@@ -52,7 +52,7 @@ async def test_invalid_login(async_client: AsyncClient):
         "/api/auth/login",
         json={
             "username": "nonexistent",
-            "password": "wrongpass"
+            "password": "wrong"
         }
     )
     assert response.status_code == 401
