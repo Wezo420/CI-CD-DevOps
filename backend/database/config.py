@@ -26,7 +26,7 @@ async_session = sessionmaker(
     expire_on_commit=False
 )
 
-# Base class for models
+# Base class for models - IMPORTANT: Use this same Base in models.py
 Base = declarative_base()
 
 async def init_db():
