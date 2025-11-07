@@ -9,8 +9,8 @@ class User(Base):
     __table_args__ = {'extend_existing': True}  # ADD THIS LINE
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    username = Column(String, unique=True, index=True, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=False)
+    username = Column(String, unique=True, nullable=False)
+    email = Column(String, unique=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     full_name = Column(String)
     is_active = Column(Boolean, default=True)
@@ -66,11 +66,11 @@ class SecurityScan(Base):
     __table_args__ = {'extend_existing': True}  # ADD THIS LINE
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    scan_type = Column(String, index=True)
-    repository = Column(String, index=True)
+    scan_type = Column(String)
+    repository = Column(String)
     branch = Column(String)
     commit_hash = Column(String, unique=True)
-    scan_date = Column(DateTime, default=datetime.utcnow, index=True)
+    scan_date = Column(DateTime, default=datetime.utcnow)
     status = Column(String)
     total_issues = Column(Integer, default=0)
     critical_issues = Column(Integer, default=0)
@@ -86,7 +86,7 @@ class Vulnerability(Base):
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     scan_id = Column(String, ForeignKey("security_scans.id"))
-    title = Column(String, index=True)
+    title = Column(String)
     description = Column(Text)
     severity = Column(String)
     cvss_score = Column(String)
@@ -105,7 +105,7 @@ class ComplianceCheck(Base):
     __table_args__ = {'extend_existing': True}  # ADD THIS LINE
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    framework = Column(String, index=True)
+    framework = Column(String)
     check_name = Column(String)
     status = Column(String)
     last_checked = Column(DateTime, default=datetime.utcnow)
@@ -119,11 +119,11 @@ class AuditLog(Base):
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String, ForeignKey("users.id"))
-    action = Column(String, index=True)
+    action = Column(String)
     resource = Column(String)
     resource_id = Column(String)
     details = Column(JSON)
-    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    timestamp = Column(DateTime, default=datetime.utcnow)
     ip_address = Column(String)
     
     user = relationship("User", back_populates="audit_logs")
