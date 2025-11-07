@@ -4,17 +4,14 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 
-# Use in-memory SQLite database - 100% fresh every time
+# Use in-memory SQLite database
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 
-# Import database config FIRST
-from backend.database.config import engine, Base
-
-# Import models to ensure they're registered with Base
-from backend.database import models
-
-# Then import app
+# Import app FIRST - this will import models in correct order
 from backend.main import app
+
+# Then import database config
+from backend.database.config import engine, Base
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -26,7 +23,6 @@ def event_loop():
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def initialize_db():
     """Initialize test database before any tests run."""
-    # IN-MEMORY DATABASE: 100% fresh every time
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
