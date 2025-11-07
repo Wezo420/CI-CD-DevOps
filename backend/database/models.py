@@ -6,6 +6,7 @@ import uuid
 
 class User(Base):
     __tablename__ = "users"
+    __table_args__ = {'extend_existing': True}  # ADD THIS LINE
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     username = Column(String, unique=True, index=True, nullable=False)
@@ -34,6 +35,7 @@ class User(Base):
 
 class MedicalRecord(Base):
     __tablename__ = "medical_records"
+    __table_args__ = {'extend_existing': True}  # ADD THIS LINE
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     patient_id = Column(String, ForeignKey("users.id"), nullable=False)
@@ -61,6 +63,7 @@ class MedicalRecord(Base):
 
 class SecurityScan(Base):
     __tablename__ = "security_scans"
+    __table_args__ = {'extend_existing': True}  # ADD THIS LINE
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     scan_type = Column(String, index=True)
@@ -79,6 +82,7 @@ class SecurityScan(Base):
 
 class Vulnerability(Base):
     __tablename__ = "vulnerabilities"
+    __table_args__ = {'extend_existing': True}  # ADD THIS LINE
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     scan_id = Column(String, ForeignKey("security_scans.id"))
@@ -98,6 +102,7 @@ class Vulnerability(Base):
 
 class ComplianceCheck(Base):
     __tablename__ = "compliance_checks"
+    __table_args__ = {'extend_existing': True}  # ADD THIS LINE
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     framework = Column(String, index=True)
@@ -110,6 +115,7 @@ class ComplianceCheck(Base):
 
 class AuditLog(Base):
     __tablename__ = "audit_logs"
+    __table_args__ = {'extend_existing': True}  # ADD THIS LINE
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String, ForeignKey("users.id"))
