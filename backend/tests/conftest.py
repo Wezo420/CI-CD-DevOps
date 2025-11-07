@@ -1,65 +1,55 @@
 # backend/tests/conftest.py
-import asyncio
-import os
 import pytest
+import os
 from httpx import AsyncClient
 
-# Import your FastAPI app
-# Use package-style import that matches your repo layout
-from backend.main import app
+# Import the FastAPI app that tests will exercise.
+# Tests import `backend.main:app` so we import the same.
+try:
+    from backend.main import app
+except Exception:
+    # fallback if tests run from repo root and import path differs
+    from main import app  # noqa: E402
 
-# Ensure tests run with an asyncio event loop fixture (pytest-asyncio)
-@pytest.fixture(scope="session")
-def event_loop():
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
+# Use seeded credentials which your seed script creates (adjust if different)
+SEED_USERNAME = os.getenv("TEST_SEED_USERNAME", "dr_smith")
+SEED_PASSWORD = os.getenv("TEST_SEED_PASSWORD", "doctor123")
 
-# Async HTTP client fixture for FastAPI
 @pytest.fixture
 async def async_client():
     """
-    Yields an httpx.AsyncClient wired to the FastAPI app.
-    Tests can `await async_client.get(...)` etc.
+    Provides an httpx.AsyncClient that operates against the FastAPI app (no HTTP server).
+    Yielded value is an AsyncClient instance (not an async generator).
     """
     async with AsyncClient(app=app, base_url="http://testserver") as client:
         yield client
 
-# Auth helper fixture that registers (if needed) and logs in a test user,
-# returning headers dict to pass into requests.
+
 @pytest.fixture
 async def auth_headers(async_client: AsyncClient):
-    # try register (ignore if already exists)
-    register_payload = {
-        "username": "testuser",
-        "email": "test@example.com",
-        "password": "securepass123",
-        "full_name": "Test User"
-    }
-
-    # Tests call endpoints under /api/... — follow that
-    try:
-        await async_client.post("/api/auth/register", json=register_payload)
-    except Exception:
-        # ignore registration errors — could already exist
-        pass
-
-    # Login to get token
-    login_payload = {"username": "testuser", "password": "securepass123"}
-    resp = await async_client.post("/api/auth/login", json=login_payload)
+    """
+    Returns headers dict containing a valid Bearer token for requests.
+    Uses seeded user login to obtain token so tests don't need to create users.
+    """
+    # Attempt to login using seeded credentials
+    resp = await async_client.post("/api/auth/login", json={
+        "username": SEED_USERNAME,
+        "password": SEED_PASSWORD
+    })
+    # If login fails, try register (some CI runs may not have seeded DB)
     if resp.status_code != 200:
-        # If login failed, try to register then login again
-        await async_client.post("/api/auth/register", json=register_payload)
-        resp = await async_client.post("/api/auth/login", json=login_payload)
+        # try to register
+        await async_client.post("/api/auth/register", json={
+            "username": SEED_USERNAME,
+            "email": f"{SEED_USERNAME}@example.test",
+            "password": SEED_PASSWORD,
+            "full_name": "Seed User"
+        })
+        resp = await async_client.post("/api/auth/login", json={
+            "username": SEED_USERNAME,
+            "password": SEED_PASSWORD
+        })
 
-    token = None
-    try:
-        token = resp.json().get("access_token")
-    except Exception:
-        token = None
-
-    if not token:
-        # Provide a fallback test-token so tests that rely on auth can continue
-        return {"Authorization": "Bearer test-token"}
-
+    data = resp.json()
+    token = data.get("access_token") or data.get("token") or ""
     return {"Authorization": f"Bearer {token}"}
