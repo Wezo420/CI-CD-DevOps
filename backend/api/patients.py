@@ -3,10 +3,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
 
-from database.config import get_db
-from database.models import User, MedicalRecord, AuditLog
-from schemas.medical_record import MedicalRecordCreate, MedicalRecordResponse, MedicalRecordUpdate
-from auth.security import verify_jwt_token
+from backend.database.config import get_db
+from backend.database.models import User, MedicalRecord, AuditLog
+from backend.schemas.medical_record import MedicalRecordCreate, MedicalRecordResponse, MedicalRecordUpdate
+from backend.auth.security import verify_jwt_token
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import uuid
 from datetime import datetime
