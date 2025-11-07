@@ -32,7 +32,8 @@ jobs:
         run: |
           set -e
           cd backend
-          export PYTHONPATH="$(pwd)"
+          # Set PYTHONPATH to the repository root
+          export PYTHONPATH="$GITHUB_WORKSPACE"
           export DATABASE_URL="sqlite+aiosqlite:///./test.db"
           python -m pytest tests -v
 
