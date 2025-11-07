@@ -198,7 +198,7 @@ curl http://localhost:8000/health
 
 ### Database Connection
 \`\`\`bash
-curl http://localhost:8000/api/security/scans -H "Authorization: Bearer YOUR_TOKEN"
+curl http://localhost:8000/api/security/scans -H "Authorization: Bearer $API_KEY
 \`\`\`
 
 ### Security Dashboard
