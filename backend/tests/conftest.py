@@ -1,80 +1,63 @@
 # backend/tests/conftest.py 
 import os
 import asyncio
-
-# ensure tests use the CI-friendly SQLite async URL and that app code sees it
-os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
-
-# run async DB init before any imports that import models/app
-# import the init function lazily after setting env
-from backend.database.config import init_db
-
-# create tables (blocks until done) so imports won't hit "no such table"
-asyncio.run(init_db())
-
-
 import pathlib
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 
-# Ensure we import the app from backend package (CI runs pytest from backend/ with PYTHONPATH set)
-try:
-    from backend.main import app
-except Exception:
-    # fallback for local runs from repo root
-    from main import app  # noqa: E402
+# Set test database URL FIRST
+os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
 
-# marker so we can see in runner logs that this conftest file was used
-try:
-    pathlib.Path("/tmp/backend_conftest_loaded").write_text("ok")
-except Exception:
-    pass
+# Import after setting environment
+from backend.database.config import init_db, engine, Base
+from backend.main import app
 
-SEED_USERNAME = os.getenv("TEST_SEED_USERNAME", "dr_smith")
-SEED_PASSWORD = os.getenv("TEST_SEED_PASSWORD", "doctor123")
+# Import models to ensure they're registered with Base
+from backend.database import models
 
+@pytest.fixture(scope="session")
+def event_loop():
+    """Create an instance of the default event loop for the test session."""
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
+
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def initialize_db():
+    """Initialize test database before any tests run."""
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
+    # Recreate for each test session
+    yield
 
 @pytest_asyncio.fixture
 async def async_client():
-    """
-    AsyncClient fixture that yields a real httpx.AsyncClient (has .get/.post).
-    Use pytest-asyncio to ensure proper coroutine handling.
-    """
+    """AsyncClient fixture for testing."""
     async with AsyncClient(app=app, base_url="http://testserver") as client:
         yield client
 
-
 @pytest_asyncio.fixture
 async def auth_headers(async_client: AsyncClient):
-    """
-    Returns headers with a valid Bearer token.
-    Tries login, otherwise registers then logs in.
-    """
-    # try login
+    """Returns headers with a valid Bearer token."""
+    SEED_USERNAME = "dr_smith"
+    SEED_PASSWORD = "doctor123"
+    
+    # Try to register first
+    await async_client.post("/api/auth/register", json={
+        "username": SEED_USERNAME,
+        "email": f"{SEED_USERNAME}@example.test",
+        "password": SEED_PASSWORD,
+        "full_name": "Seed User"
+    })
+    
+    # Then login
     resp = await async_client.post("/api/auth/login", json={
         "username": SEED_USERNAME,
         "password": SEED_PASSWORD
     })
-
-    if resp.status_code != 200:
-        # attempt to register
-        await async_client.post("/api/auth/register", json={
-            "username": SEED_USERNAME,
-            "email": f"{SEED_USERNAME}@example.test",
-            "password": SEED_PASSWORD,
-            "full_name": "Seed User"
-        })
-        resp = await async_client.post("/api/auth/login", json={
-            "username": SEED_USERNAME,
-            "password": SEED_PASSWORD
-        })
-
-    data = {}
-    try:
-        data = resp.json() if resp.content else {}
-    except Exception:
-        data = {}
-
+    
+    data = resp.json()
     token = data.get("access_token") or data.get("token") or ""
     return {"Authorization": f"Bearer {token}"}
