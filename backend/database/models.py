@@ -41,12 +41,12 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # Explicitly specify which foreign-key the relationship uses.
-    # Use a string reference to the target column to avoid forward-reference problems.
+    # Use an explicit primaryjoin so SQLAlchemy knows which FK to join on.
+    # This avoids ambiguous foreign key errors when there are multiple FKs.
     medical_records = relationship(
         "MedicalRecord",
         back_populates="patient",
-        foreign_keys=["MedicalRecord.patient_id"],
+        primaryjoin="User.id == MedicalRecord.patient_id",
         cascade="all, delete-orphan",
     )
 
@@ -85,7 +85,6 @@ class MedicalRecord(Base):
         foreign_keys=[provider_id],
         backref="provided_records",
     )
-
 
 class SecurityScan(Base):
     __tablename__ = "security_scans"
