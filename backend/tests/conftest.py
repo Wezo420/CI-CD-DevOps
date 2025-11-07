@@ -4,8 +4,8 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 
-# Use a fresh database file for tests
-os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./test_fresh.db")
+# Use in-memory SQLite database - 100% fresh every time
+os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 
 # Import database config FIRST
 from backend.database.config import engine, Base
@@ -26,7 +26,7 @@ def event_loop():
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def initialize_db():
     """Initialize test database before any tests run."""
-    # SIMPLEST APPROACH: Just create tables, don't drop anything
+    # IN-MEMORY DATABASE: 100% fresh every time
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
