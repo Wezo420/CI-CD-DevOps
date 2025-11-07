@@ -26,13 +26,27 @@ def event_loop():
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def initialize_db():
     """Initialize test database before any tests run."""
-    # Use a fresh database file
+    # NUCLEAR OPTION: Use a completely fresh approach
+    import sqlite3
+    
+    # Close all connections first
+    await engine.dispose()
+    
+    # Delete any existing test database
     if os.path.exists("./test.db"):
         os.remove("./test.db")
     
+    # Create fresh database with SQLite directly
+    conn = sqlite3.connect('./test.db')
+    conn.close()
+    
+    # Now let SQLAlchemy handle the schema
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-        await conn.run_sync(Base.metadata.create_all)
+        # Drop everything forcefully
+        await conn.run_sync(lambda sync_conn: Base.metadata.drop_all(sync_conn, checkfirst=False))
+        # Create everything fresh
+        await conn.run_sync(lambda sync_conn: Base.metadata.create_all(sync_conn, checkfirst=False))
+    
     yield
 
 @pytest_asyncio.fixture
