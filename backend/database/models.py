@@ -20,18 +20,18 @@ class User(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Use absolute class paths in relationships
-    medical_records = relationship(
-        "backend.database.models.MedicalRecord",  # CHANGED: Use full path
-        back_populates="patient",
-        foreign_keys="backend.database.models.MedicalRecord.patient_id",
-        cascade="all, delete-orphan",
-    )
+    # medical_records = relationship(
+    #     "backend.database.models.MedicalRecord",  # CHANGED: Use full path
+    #     back_populates="patient",
+    #     foreign_keys="backend.database.models.MedicalRecord.patient_id",
+    #     cascade="all, delete-orphan",
+    # )
 
-    audit_logs = relationship(
-        "backend.database.models.AuditLog",  # CHANGED: Use full path
-        back_populates="user",
-        cascade="all, delete-orphan",
-    )
+    # audit_logs = relationship(
+    #     "backend.database.models.AuditLog",  # CHANGED: Use full path
+    #     back_populates="user",
+    #     cascade="all, delete-orphan",
+    # )
 
 
 class MedicalRecord(Base):
@@ -50,16 +50,16 @@ class MedicalRecord(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    patient = relationship(
-        "backend.database.models.User",  # CHANGED: Use full path
-        foreign_keys=[patient_id],
-        back_populates="medical_records",
-    )
+    # patient = relationship(
+    #     "backend.database.models.User",  # CHANGED: Use full path
+    #     foreign_keys=[patient_id],
+    #     back_populates="medical_records",
+    # )
 
-    provider = relationship(
-        "backend.database.models.User",  # CHANGED: Use full path
-        foreign_keys=[provider_id],
-    )
+    # provider = relationship(
+    #     "backend.database.models.User",  # CHANGED: Use full path
+    #     foreign_keys=[provider_id],
+    # )
 
 
 class SecurityScan(Base):
@@ -127,4 +127,4 @@ class AuditLog(Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
     ip_address = Column(String)
     
-    user = relationship("backend.database.models.User", back_populates="audit_logs")  # CHANGED: Use full path
+    # user = relationship("backend.database.models.User", back_populates="audit_logs")  # CHANGED: Use full path
