@@ -250,12 +250,10 @@ NEXT_PUBLIC_API_URL=http://<backend-host>:8000
 
 ## Contributors & contact
 
-* **Project lead / QA & Documentation:** You (GitHub: `Wezo420`)
-* **Backend & plugin:** (list contributors here)
-* **Frontend (dashboard):** (list frontend developer)
-* **CI/CD specialist / DevSecOps:** (list or assign)
-
-*(Add names and GitHub handles here before handoff.)*
+* **Project lead / QA & Documentation:** Aviral Sharma (GitHub: `Wezo420`)
+* **Backend & plugin:** Ayush Shaw, Anvita Choudhury, Aviral Sharma
+* **Frontend (dashboard):** Ritika Dekate
+* **CI/CD specialist / DevSecOps:** Anjali Bhat, Aviral Sharma
 
 ---
 
