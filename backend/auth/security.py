@@ -11,6 +11,8 @@ ALGORITHM = "HS256"
 ACCESS_EXPIRE_MINUTES = 60
 
 def hash_password(plain: str) -> str:
+    if len(plain) > 72:
+        plain = plain[:72]
     return PWD_CTX.hash(plain)
 
 def verify_password(plain: str, hashed: str) -> bool:
