@@ -24,7 +24,21 @@ async def get_my_records(current_user: dict = Depends(get_current_user), db: Asy
     stmt = select(MedicalRecord).where(MedicalRecord.patient_id == current_user["user_id"])
     res = await db.execute(stmt)
     records = res.scalars().all()
-    return [r.__dict__ for r in records]
+    # FIX: Convert SQLAlchemy objects to dictionaries
+    return [
+        {
+            "id": record.id,
+            "patient_id": record.patient_id,
+            "diagnosis": record.diagnosis,
+            "treatment": record.treatment,
+            "allergies": record.allergies,
+            "medications": record.medications,
+            "lab_results": record.lab_results,
+            "created_at": record.created_at.isoformat() if record.created_at else None,
+            "updated_at": record.updated_at.isoformat() if record.updated_at else None
+        }
+        for record in records
+    ]
 
 @router.post("/create", response_model=dict)
 async def create_medical_record(record: dict, current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
