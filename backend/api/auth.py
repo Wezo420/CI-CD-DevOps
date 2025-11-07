@@ -1,59 +1,57 @@
+# backend/api/auth.py
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from datetime import timedelta
+from pydantic import BaseModel
 
 from backend.database.config import get_db
 from backend.database.models import User
-from backend.schemas.user import UserCreate, UserResponse, TokenResponse, LoginRequest
 from backend.auth.security import hash_password, verify_password, create_access_token
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter()
 
-# rest of file unchanged
+# request/response schemas (small local defs to avoid import problems)
+class RegisterRequest(BaseModel):
+    username: str
+    email: str
+    password: str
+    full_name: str | None = None
+    role: str | None = "user"
 
-@router.post("/register", response_model=UserResponse)
-async def register(user_create: UserCreate, db: AsyncSession = Depends(get_db)):
-    """Register a new user"""
-    stmt = select(User).where(User.username == user_create.username)
-    existing_user = await db.execute(stmt)
-    if existing_user.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already registered"
-        )
-    
-    hashed_password = hash_password(user_create.password)
-    db_user = User(
-        username=user_create.username,
-        email=user_create.email,
-        hashed_password=hashed_password,
-        full_name=user_create.full_name,
-        role=user_create.role
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str
+    user: dict
+
+@router.post("/register", response_model=dict)
+async def register(user: RegisterRequest, db: AsyncSession = Depends(get_db)):
+    stmt = select(User).where(User.username == user.username)
+    existing = await db.execute(stmt)
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Username already exists")
+    new = User(
+        username=user.username,
+        email=user.email,
+        hashed_password=hash_password(user.password),
+        full_name=user.full_name,
+        role=user.role
     )
-    db.add(db_user)
+    db.add(new)
     await db.commit()
-    await db.refresh(db_user)
-    return db_user
+    await db.refresh(new)
+    # return basic user object (tests expect code 200)
+    return {"id": new.id, "username": new.username, "email": new.email}
 
 @router.post("/login", response_model=TokenResponse)
-async def login(credentials: LoginRequest, db: AsyncSession = Depends(get_db)):
-    """Login user"""
-    stmt = select(User).where(User.username == credentials.username)
-    result = await db.execute(stmt)
-    user = result.scalar_one_or_none()
-    
-    if not user or not verify_password(credentials.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials"
-        )
-    
-    access_token = create_access_token(
-        data={"sub": user.username, "user_id": user.id}
-    )
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user": user
-    }
+async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
+    stmt = select(User).where(User.username == payload.username)
+    res = await db.execute(stmt)
+    user = res.scalar_one_or_none()
+    if not user or not verify_password(payload.password, user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    token = create_access_token({"sub": user.username, "user_id": user.id})
+    return {"access_token": token, "token_type": "bearer", "user": {"id": user.id, "username": user.username}}
