@@ -8,10 +8,10 @@ from httpx import AsyncClient
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
 
 # Import database config after setting environment
-from backend.database.config import init_db, engine, Base
+from backend.database.config import engine, Base
 
-# Import models to ensure they're registered with Base BEFORE app import
-from backend.database import models
+# Import ALL models to ensure they're registered with Base
+from backend.database.models import User, MedicalRecord, SecurityScan, Vulnerability, ComplianceCheck, AuditLog
 
 # Now import app
 from backend.main import app
