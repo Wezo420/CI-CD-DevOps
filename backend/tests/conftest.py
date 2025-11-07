@@ -7,11 +7,14 @@ from httpx import AsyncClient
 # Set test database URL FIRST
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
 
-# Import app FIRST - this ensures proper import order
-from backend.main import app
-
-# Then import database config
+# Import database config FIRST
 from backend.database.config import engine, Base
+
+# Import models to ensure they're registered with Base
+from backend.database import models
+
+# Then import app
+from backend.main import app
 
 @pytest.fixture(scope="session")
 def event_loop():
