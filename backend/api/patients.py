@@ -14,7 +14,7 @@ from datetime import datetime
 router = APIRouter()
 security = HTTPBearer()
 
-async def get_current_user(credentials: HTTPAuthCredentials = Depends(security)):
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     token = credentials.credentials
     payload = verify_jwt_token(token)
     if not payload:
