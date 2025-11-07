@@ -4,10 +4,10 @@ from sqlalchemy import select, desc
 from typing import List
 from datetime import datetime, timedelta
 
-from database.config import get_db
-from database.models import SecurityScan, Vulnerability, ComplianceCheck
-from schemas.security_scan import SecurityScanCreate, SecurityScanResponse, VulnerabilityResponse
-from auth.security import verify_jwt_token
+from backend.database.config import get_db
+from backend.database.models import SecurityScan, Vulnerability, ComplianceCheck
+from backend.schemas.security_scan import SecurityScanCreate, SecurityScanResponse, VulnerabilityResponse
+from backend.auth.security import verify_jwt_token
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import uuid
 
