@@ -7,14 +7,11 @@ from httpx import AsyncClient
 # Set test database URL FIRST
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
 
-# Import database config after setting environment
-from backend.database.config import engine, Base
-
-# Import ALL models to ensure they're registered with Base
-from backend.database.models import User, MedicalRecord, SecurityScan, Vulnerability, ComplianceCheck, AuditLog
-
-# Now import app
+# Import app FIRST - this ensures proper import order
 from backend.main import app
+
+# Then import database config
+from backend.database.config import engine, Base
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -26,7 +23,6 @@ def event_loop():
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def initialize_db():
     """Initialize test database before any tests run."""
-    # Drop and recreate all tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
