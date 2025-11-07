@@ -29,7 +29,7 @@ Base = declarative_base()
 
 class User(Base):
     __tablename__ = "users"
-    
+
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     username = Column(String, unique=True, index=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
@@ -40,16 +40,29 @@ class User(Base):
     role = Column(String, default="user")  # user, doctor, admin
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    medical_records = relationship("MedicalRecord", back_populates="patient")
-    audit_logs = relationship("AuditLog", back_populates="user")
+
+    # Explicitly specify which foreign-key the relationship uses.
+    # Use a string reference to the target column to avoid forward-reference problems.
+    medical_records = relationship(
+        "MedicalRecord",
+        back_populates="patient",
+        foreign_keys=["MedicalRecord.patient_id"],
+        cascade="all, delete-orphan",
+    )
+
+    audit_logs = relationship(
+        "AuditLog",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
 
 class MedicalRecord(Base):
     __tablename__ = "medical_records"
-    
+
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     patient_id = Column(String, ForeignKey("users.id"), nullable=False)
-    provider_id = Column(String, ForeignKey("users.id"))
+    provider_id = Column(String, ForeignKey("users.id"), nullable=True)
     diagnosis = Column(Text)
     treatment = Column(Text)
     medications = Column(JSON)
@@ -58,8 +71,21 @@ class MedicalRecord(Base):
     is_encrypted = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    patient = relationship("User", foreign_keys=[patient_id], back_populates="medical_records")
+
+    # 'patient' relationship uses the patient_id FK (explicit)
+    patient = relationship(
+        "User",
+        foreign_keys=[patient_id],
+        back_populates="medical_records",
+    )
+
+    # Add an explicit relationship for the provider (so SQLAlchemy doesn't guess)
+    provider = relationship(
+        "User",
+        foreign_keys=[provider_id],
+        backref="provided_records",
+    )
+
 
 class SecurityScan(Base):
     __tablename__ = "security_scans"
