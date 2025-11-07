@@ -1,7 +1,5 @@
-# backend/tests/conftest.py 
 import os
 import asyncio
-import pathlib
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
@@ -9,12 +7,14 @@ from httpx import AsyncClient
 # Set test database URL FIRST
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
 
-# Import after setting environment
+# Import database config after setting environment
 from backend.database.config import init_db, engine, Base
-from backend.main import app
 
-# Import models to ensure they're registered with Base
+# Import models to ensure they're registered with Base BEFORE app import
 from backend.database import models
+
+# Now import app
+from backend.main import app
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -26,10 +26,10 @@ def event_loop():
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def initialize_db():
     """Initialize test database before any tests run."""
+    # Drop and recreate all tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
-    # Recreate for each test session
     yield
 
 @pytest_asyncio.fixture
