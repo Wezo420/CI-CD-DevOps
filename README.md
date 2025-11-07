@@ -1,4 +1,4 @@
-# 🏥 Medical Records API — DevSecOps Integrated CI/CD Project
+# 🏥 Medical Records API — DevSecOps Integrated CI/CD Project # forked
 
 A **secure medical records management system** built using **FastAPI**, **SQLAlchemy**, and **JWT authentication**, integrated with a **DevSecOps CI/CD plugin** that performs **automated security scans** (GitLeaks, Checkov, Trivy), **report generation**, and **Slack/email alerts**.
 
