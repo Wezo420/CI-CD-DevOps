@@ -5,8 +5,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # import routers (package-style imports)
-from api.patients import router as patients_router
-from api.auth import router as auth_router
+from backend.api.patients import router as patients_router
+from backend.api.auth import router as auth_router
 
 from database.seed_data import seed_database
 import uvicorn
