@@ -235,18 +235,6 @@ NEXT_PUBLIC_API_URL=http://<backend-host>:8000
 
 ---
 
-## Handoff checklist (what to provide to a reviewer)
-
-* [ ] Repo link and branch to evaluate (main or `phase5-stabilize`)
-* [ ] `README.md` (this file) + `docs/handoff.md` + `docs/demo_script.md` + `docs/verification_checklist.md`
-* [ ] All CI workflows green (Actions screenshot or link)
-* [ ] `reports/` contains `mock_report.json` and `mock_report_history.json` for demo
-* [ ] Confirm all leaked secrets (if any) have been revoked and removed — list of rotated keys in `docs/security/` if applicable
-* [ ] Live demo instructions and any deployment URLs (Vercel frontend, Render/EC2 backend) if deployed
-* [ ] Contact/owner for follow-up and expected scope/limitations
-
----
-
 ## Contributors & contact
 
 * **Project lead / QA & Documentation:** Aviral Sharma (GitHub: `Wezo420`)
