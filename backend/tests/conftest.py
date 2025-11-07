@@ -26,6 +26,10 @@ def event_loop():
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def initialize_db():
     """Initialize test database before any tests run."""
+    # Use a fresh database file
+    if os.path.exists("./test.db"):
+        os.remove("./test.db")
+    
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
