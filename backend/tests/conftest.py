@@ -4,8 +4,8 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 
-# Set test database URL FIRST
-os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
+# Use a fresh database file for tests
+os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./test_fresh.db")
 
 # Import database config FIRST
 from backend.database.config import engine, Base
@@ -26,27 +26,9 @@ def event_loop():
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def initialize_db():
     """Initialize test database before any tests run."""
-    # NUCLEAR OPTION: Use a completely fresh approach
-    import sqlite3
-    
-    # Close all connections first
-    await engine.dispose()
-    
-    # Delete any existing test database
-    if os.path.exists("./test.db"):
-        os.remove("./test.db")
-    
-    # Create fresh database with SQLite directly
-    conn = sqlite3.connect('./test.db')
-    conn.close()
-    
-    # Now let SQLAlchemy handle the schema
+    # SIMPLEST APPROACH: Just create tables, don't drop anything
     async with engine.begin() as conn:
-        # Drop everything forcefully
-        await conn.run_sync(lambda sync_conn: Base.metadata.drop_all(sync_conn, checkfirst=False))
-        # Create everything fresh
-        await conn.run_sync(lambda sync_conn: Base.metadata.create_all(sync_conn, checkfirst=False))
-    
+        await conn.run_sync(Base.metadata.create_all)
     yield
 
 @pytest_asyncio.fixture
