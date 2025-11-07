@@ -1,31 +1,9 @@
-from backend.database.config import Base
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
-from sqlalchemy import Column, String, Integer, DateTime, Boolean, Text, Enum, ForeignKey, JSON
+# Remove the sync engine and Base creation, use the async Base from config
+from backend.database.config import Base  # IMPORTANT: Use the same Base
+from sqlalchemy import Column, String, Integer, DateTime, Boolean, Text, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from datetime import datetime
-import enum
 import uuid
-import os
-import logging
-
-logger = logging.getLogger(__name__)
-
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./test_sync.db")
-
-def make_sync_engine(url: str):
-    try:
-        e = create_engine(url, echo=False, pool_pre_ping=True, future=True)
-        return e
-    except Exception as exc:
-        logger.warning(f"Failed to create engine for {url}: {exc}")
-        fallback = "sqlite:///./test_sync.db"
-        logger.info(f"Falling back to SQLite for CI/tests: {fallback}")
-        return create_engine(fallback, echo=False, future=True)
-
-engine = make_sync_engine(DATABASE_URL)
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
-Base = declarative_base()
 
 class User(Base):
     __tablename__ = "users"
@@ -41,12 +19,10 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # Use an explicit primaryjoin so SQLAlchemy knows which FK to join on.
-    # This avoids ambiguous foreign key errors when there are multiple FKs.
     medical_records = relationship(
         "MedicalRecord",
         back_populates="patient",
-        primaryjoin="User.id == MedicalRecord.patient_id",
+        foreign_keys="MedicalRecord.patient_id",
         cascade="all, delete-orphan",
     )
 
@@ -72,30 +48,28 @@ class MedicalRecord(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # 'patient' relationship uses the patient_id FK (explicit)
     patient = relationship(
         "User",
         foreign_keys=[patient_id],
         back_populates="medical_records",
     )
 
-    # Add an explicit relationship for the provider (so SQLAlchemy doesn't guess)
     provider = relationship(
         "User",
         foreign_keys=[provider_id],
-        backref="provided_records",
     )
 
+# ... keep the rest of your models (SecurityScan, Vulnerability, etc.) the same
 class SecurityScan(Base):
     __tablename__ = "security_scans"
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    scan_type = Column(String, index=True)  # sast, dast, dependency, secrets, container
+    scan_type = Column(String, index=True)
     repository = Column(String, index=True)
     branch = Column(String)
     commit_hash = Column(String, unique=True)
     scan_date = Column(DateTime, default=datetime.utcnow, index=True)
-    status = Column(String)  # pending, in_progress, completed, failed
+    status = Column(String)
     total_issues = Column(Integer, default=0)
     critical_issues = Column(Integer, default=0)
     high_issues = Column(Integer, default=0)
@@ -110,7 +84,7 @@ class Vulnerability(Base):
     scan_id = Column(String, ForeignKey("security_scans.id"))
     title = Column(String, index=True)
     description = Column(Text)
-    severity = Column(String)  # critical, high, medium, low
+    severity = Column(String)
     cvss_score = Column(String)
     cwe_id = Column(String)
     file_path = Column(String)
@@ -119,15 +93,15 @@ class Vulnerability(Base):
     remediation = Column(Text)
     discovered_date = Column(DateTime, default=datetime.utcnow)
     fixed_date = Column(DateTime, nullable=True)
-    status = Column(String, default="open")  # open, fixed, wontfix
+    status = Column(String, default="open")
 
 class ComplianceCheck(Base):
     __tablename__ = "compliance_checks"
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    framework = Column(String, index=True)  # hipaa, soc2, gdpr, pci-dss
+    framework = Column(String, index=True)
     check_name = Column(String)
-    status = Column(String)  # pass, fail, warning
+    status = Column(String)
     last_checked = Column(DateTime, default=datetime.utcnow)
     description = Column(Text)
     remediation = Column(Text)
