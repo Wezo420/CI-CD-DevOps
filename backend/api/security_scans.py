@@ -8,13 +8,13 @@ from database.config import get_db
 from database.models import SecurityScan, Vulnerability, ComplianceCheck
 from schemas.security_scan import SecurityScanCreate, SecurityScanResponse, VulnerabilityResponse
 from auth.security import verify_jwt_token
-from fastapi.security import HTTPBearer, HTTPAuthCredentials
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import uuid
 
 router = APIRouter()
 security = HTTPBearer()
 
-async def get_current_user(credentials: HTTPAuthCredentials = Depends(security)):
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     token = credentials.credentials
     payload = verify_jwt_token(token)
     if not payload:
