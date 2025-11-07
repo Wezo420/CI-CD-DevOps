@@ -7,6 +7,7 @@ import uuid
 
 class User(Base):
     __tablename__ = "users"
+    __table_args__ = {'extend_existing': True}  # This allows redefinition if needed
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     username = Column(String, unique=True, index=True, nullable=False)
@@ -59,7 +60,6 @@ class MedicalRecord(Base):
         foreign_keys=[provider_id],
     )
 
-# ... keep the rest of your models (SecurityScan, Vulnerability, etc.) the same
 class SecurityScan(Base):
     __tablename__ = "security_scans"
     
