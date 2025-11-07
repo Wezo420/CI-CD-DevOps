@@ -4,6 +4,11 @@ import pathlib
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
+import asyncio
+from backend.database.config import init_db
+
+# ensure DB tables exist before tests
+asyncio.run(init_db())
 
 # Ensure we import the app from backend package (CI runs pytest from backend/ with PYTHONPATH set)
 try:
