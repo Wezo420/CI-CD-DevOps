@@ -18,3 +18,4 @@ aiohttp==3.9.1
 requests==2.31.0
 aiosqlite==0.18.0
 email-validator
+bcrypt
