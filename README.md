@@ -246,6 +246,6 @@ NEXT_PUBLIC_API_URL=http://<backend-host>:8000
 
 ## License
 
-This project is intended for educational and demonstration purposes. Add a license file if required (e.g. MIT).
+This project is intended for educational and demonstration purposes.
 
 ---
