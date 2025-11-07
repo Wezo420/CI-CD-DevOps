@@ -26,6 +26,8 @@ async def test_create_medical_record(async_client: AsyncClient, auth_headers: di
     assert response.status_code == 200
     data = response.json()
     assert "id" in data
+    get_response = await async_client.get("/api/patients/me", headers=auth_headers)
+    assert get_response.status_code == 200
 
 @pytest.mark.asyncio
 async def test_unauthorized_access(async_client: AsyncClient):
