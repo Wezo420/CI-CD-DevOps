@@ -7,7 +7,7 @@ from database.config import get_db
 from database.models import User, MedicalRecord, AuditLog
 from schemas.medical_record import MedicalRecordCreate, MedicalRecordResponse, MedicalRecordUpdate
 from auth.security import verify_jwt_token
-from fastapi.security import HTTPBearer, HTTPAuthCredentials
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import uuid
 from datetime import datetime
 
