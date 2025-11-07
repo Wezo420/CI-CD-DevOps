@@ -1,14 +1,22 @@
-# backend/tests/conftest.py
+# backend/tests/conftest.py 
 import os
+import asyncio
+
+# ensure tests use the CI-friendly SQLite async URL and that app code sees it
+os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
+
+# run async DB init before any imports that import models/app
+# import the init function lazily after setting env
+from backend.database.config import init_db
+
+# create tables (blocks until done) so imports won't hit "no such table"
+asyncio.run(init_db())
+
+
 import pathlib
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
-import asyncio
-from backend.database.config import init_db
-
-# ensure DB tables exist before tests
-asyncio.run(init_db())
 
 # Ensure we import the app from backend package (CI runs pytest from backend/ with PYTHONPATH set)
 try:
