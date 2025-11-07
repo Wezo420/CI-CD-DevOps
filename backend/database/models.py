@@ -6,7 +6,7 @@ import uuid
 
 class User(Base):
     __tablename__ = "users"
-    __table_args__ = {'extend_existing': True}  # ADD THIS LINE
+    __table_args__ = {'extend_existing': True}
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     username = Column(String, unique=True, nullable=False)
@@ -19,15 +19,16 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # Use absolute class paths in relationships
     medical_records = relationship(
-        "MedicalRecord",
+        "backend.database.models.MedicalRecord",  # CHANGED: Use full path
         back_populates="patient",
-        foreign_keys="MedicalRecord.patient_id",
+        foreign_keys="backend.database.models.MedicalRecord.patient_id",
         cascade="all, delete-orphan",
     )
 
     audit_logs = relationship(
-        "AuditLog", 
+        "backend.database.models.AuditLog",  # CHANGED: Use full path
         back_populates="user",
         cascade="all, delete-orphan",
     )
@@ -35,7 +36,7 @@ class User(Base):
 
 class MedicalRecord(Base):
     __tablename__ = "medical_records"
-    __table_args__ = {'extend_existing': True}  # ADD THIS LINE
+    __table_args__ = {'extend_existing': True}
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     patient_id = Column(String, ForeignKey("users.id"), nullable=False)
@@ -50,20 +51,20 @@ class MedicalRecord(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     patient = relationship(
-        "User",
+        "backend.database.models.User",  # CHANGED: Use full path
         foreign_keys=[patient_id],
         back_populates="medical_records",
     )
 
     provider = relationship(
-        "User",
+        "backend.database.models.User",  # CHANGED: Use full path
         foreign_keys=[provider_id],
     )
 
 
 class SecurityScan(Base):
     __tablename__ = "security_scans"
-    __table_args__ = {'extend_existing': True}  # ADD THIS LINE
+    __table_args__ = {'extend_existing': True}
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     scan_type = Column(String)
@@ -82,7 +83,7 @@ class SecurityScan(Base):
 
 class Vulnerability(Base):
     __tablename__ = "vulnerabilities"
-    __table_args__ = {'extend_existing': True}  # ADD THIS LINE
+    __table_args__ = {'extend_existing': True}
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     scan_id = Column(String, ForeignKey("security_scans.id"))
@@ -102,7 +103,7 @@ class Vulnerability(Base):
 
 class ComplianceCheck(Base):
     __tablename__ = "compliance_checks"
-    __table_args__ = {'extend_existing': True}  # ADD THIS LINE
+    __table_args__ = {'extend_existing': True}
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     framework = Column(String)
@@ -115,7 +116,7 @@ class ComplianceCheck(Base):
 
 class AuditLog(Base):
     __tablename__ = "audit_logs"
-    __table_args__ = {'extend_existing': True}  # ADD THIS LINE
+    __table_args__ = {'extend_existing': True}
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String, ForeignKey("users.id"))
@@ -126,4 +127,4 @@ class AuditLog(Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
     ip_address = Column(String)
     
-    user = relationship("User", back_populates="audit_logs")
+    user = relationship("backend.database.models.User", back_populates="audit_logs")  # CHANGED: Use full path
